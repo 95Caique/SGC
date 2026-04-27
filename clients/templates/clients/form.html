@@ -1,0 +1,29 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ titulo_pagina|default:"Novo cliente" }} - ContraFlow{% endblock %}
+{% block breadcrumb %}{{ breadcrumb_pagina|default:"Clientes › Novo" }}{% endblock %}
+{% block page_title %}{{ titulo_pagina|default:"Novo cliente" }}{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <form class="institutional-form" method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="notice">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="form-grid">
+            {% for field in form %}
+                <label>
+                    <span>{{ field.label }}</span>
+                    {{ field }}
+                    {% if field.errors %}<small class="form-error">{{ field.errors|striptags }}</small>{% endif %}
+                </label>
+            {% endfor %}
+        </div>
+        <div class="form-actions">
+            <button class="button button-success" type="submit">{{ texto_botao|default:"Salvar" }}</button>
+            <a class="button button-muted" href="{% url 'clients:listar' %}">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

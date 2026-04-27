@@ -6,23 +6,40 @@ from django.http import HttpResponseForbidden
 
 class VerificadorPermissoes:
     @staticmethod
+    def usuario_tem_acesso_global(usuario):
+        return bool(usuario and usuario.is_authenticated and usuario.is_superuser)
+
+    @staticmethod
     def usuario_pode_criar(usuario):
         return bool(
             usuario
             and usuario.is_authenticated
-            and usuario.funcao in [usuario.Funcao.ADMINISTRADOR, usuario.Funcao.GERENCIADOR]
+            and (
+                usuario.is_superuser
+                or usuario.funcao in [usuario.Funcao.ADMINISTRADOR, usuario.Funcao.GERENCIADOR]
+            )
         )
 
     @staticmethod
     def usuario_pode_editar(usuario):
-        return bool(usuario and usuario.is_authenticated and usuario.pode_editar())
+        return bool(
+            usuario
+            and usuario.is_authenticated
+            and (usuario.is_superuser or usuario.pode_editar())
+        )
 
     @staticmethod
     def usuario_pode_deletar(usuario):
-        return bool(usuario and usuario.is_authenticated and usuario.pode_deletar())
+        return bool(
+            usuario
+            and usuario.is_authenticated
+            and (usuario.is_superuser or usuario.pode_deletar())
+        )
 
     @staticmethod
     def usuario_pertence_empresa(usuario, empresa):
+        if VerificadorPermissoes.usuario_tem_acesso_global(usuario):
+            return True
         return bool(
             usuario
             and usuario.is_authenticated
@@ -33,6 +50,8 @@ class VerificadorPermissoes:
 
     @staticmethod
     def usuario_pode_acessar_recurso(usuario, recurso):
+        if VerificadorPermissoes.usuario_tem_acesso_global(usuario):
+            return True
         empresa = getattr(recurso, "empresa", None)
         return VerificadorPermissoes.usuario_pertence_empresa(usuario, empresa)
 

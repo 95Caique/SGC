@@ -133,3 +133,73 @@ class ViewsPainelTestCase(ServicoPainelTestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(resposta.json()["contratos"]["total"], 2)
         self.assertEqual(resposta.json()["propostas"]["total"], 2)
+
+    def test_administracao_renderiza_template_institucional(self):
+        resposta = self.client.get(reverse("dashboard:administracao"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Modulos administrativos")
+        self.assertContains(resposta, "data-table")
+
+    def test_central_servicos_renderiza_template_institucional(self):
+        resposta = self.client.get(reverse("dashboard:central_servicos"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Central de Servicos")
+        self.assertContains(resposta, "data-table")
+
+    def test_relatorios_renderiza_template_institucional(self):
+        resposta = self.client.get(reverse("dashboard:relatorios"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Relatorios")
+        self.assertContains(resposta, "data-table")
+
+    def test_interface_institucional_renderiza_tabelas(self):
+        resposta = self.client.get(reverse("dashboard:interface"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Mostrando 2 Contratos")
+        self.assertContains(resposta, "Mostrando 2 Propostas")
+        self.assertContains(resposta, "total-row")
+
+    def test_interface_institucional_sem_empresa_nao_quebra(self):
+        usuario_sem_empresa = UsuarioCustomizado.objects.create_user(
+            username="semempresa",
+            password="senha123",
+            funcao=UsuarioCustomizado.Funcao.ADMINISTRADOR,
+        )
+        self.client.force_login(usuario_sem_empresa)
+
+        resposta = self.client.get(reverse("dashboard:interface"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Sem empresa")
+
+    def test_superuser_sem_empresa_visualiza_painel_global(self):
+        superusuario = UsuarioCustomizado.objects.create_superuser(
+            username="super",
+            password="senha123",
+        )
+        self.client.force_login(superusuario)
+
+        resposta = self.client.get(reverse("dashboard:interface"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Mostrando 2 Contratos")
+        self.assertContains(resposta, "Mostrando 2 Propostas")
+        self.assertContains(resposta, "Acesso global")
+        self.assertNotContains(resposta, "Vincule este usuario a uma empresa")
+
+    def test_metricas_superuser_sem_empresa_considera_dados_globais(self):
+        superusuario = UsuarioCustomizado.objects.create_superuser(
+            username="super",
+            password="senha123",
+        )
+        self.client.force_login(superusuario)
+
+        resposta = self.client.get(reverse("dashboard:metricas"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.json()["total_contratos_ativos"], 1)
+        self.assertEqual(resposta.json()["total_clientes"], 1)

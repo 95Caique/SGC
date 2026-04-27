@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Gestao de Pessoas - ContraFlow{% endblock %}
+{% block breadcrumb %}Gestao de Pessoas{% endblock %}
+{% block page_title %}Gestao de Pessoas{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="tabs">
+        <a class="tab active" href="{% url 'accounts:gestao_pessoas' %}">Usuarios <span>{{ total_usuarios }}</span></a>
+        <a class="tab" href="{% url 'accounts:gestao_pessoas' %}">Perfis</a>
+    </div>
+
+    <div class="list-meta">Mostrando {{ total_usuarios }} Usuarios</div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Codigo</th>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Empresa</th>
+                    <th>Funcao</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                    <tr>
+                        <td>#{{ usuario.id }}</td>
+                        <td><span class="table-link">{{ usuario.username }}</span></td>
+                        <td>{{ usuario.email|default:"-" }}</td>
+                        <td>{% if usuario.empresa %}{{ usuario.empresa.nome }}{% else %}-{% endif %}</td>
+                        <td>{{ usuario.get_funcao_display }}</td>
+                        <td>
+                            {% if usuario.is_active %}
+                                <span class="badge badge-ativo">Ativo</span>
+                            {% else %}
+                                <span class="badge badge-cancelado">Inativo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6" class="empty-state">Nenhum usuario encontrado.</td></tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="4">Total</td>
+                    <td colspan="2">{{ total_usuarios }} usuario(s)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

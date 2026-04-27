@@ -1,0 +1,62 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Relatorios - ContraFlow{% endblock %}
+{% block breadcrumb %}Relatorios{% endblock %}
+{% block page_title %}Relatorios{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="metric-grid">
+        <article class="metric-card">
+            <span>Clientes</span>
+            <strong>{{ metricas.total_clientes }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Faturamento</span>
+            <strong>R$ {{ metricas.faturamento_mensal }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Contratos ativos</span>
+            <strong>{{ metricas.total_contratos_ativos }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Propostas pendentes</span>
+            <strong>{{ metricas.propostas_pendentes }}</strong>
+        </article>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Grupo</th>
+                    <th>Total</th>
+                    <th>Ativos/Rascunhos</th>
+                    <th>Pendentes</th>
+                    <th>Finalizados</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="table-link">Contratos</span></td>
+                    <td>{{ saude_contratos.total|default:0 }}</td>
+                    <td>{{ saude_contratos.ativos|default:0 }}</td>
+                    <td>{{ saude_contratos.suspensos|default:0 }}</td>
+                    <td>{{ saude_contratos.encerrados|default:0 }}</td>
+                </tr>
+                <tr>
+                    <td><span class="table-link">Propostas</span></td>
+                    <td>{{ saude_propostas.total|default:0 }}</td>
+                    <td>{{ saude_propostas.rascunhos|default:0 }}</td>
+                    <td>{{ saude_propostas.enviadas|default:0 }}</td>
+                    <td>{{ saude_propostas.convertidas|default:0 }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3">Resumo</td>
+                    <td colspan="2">Dados consolidados por empresa</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

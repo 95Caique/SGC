@@ -216,11 +216,68 @@ class ViewsPropostaTestCase(PropostaBaseTestCase):
         self.criar_proposta()
         self.client.force_login(self.usuario)
 
-        resposta = self.client.get(reverse("proposals:listar"))
+        resposta = self.client.get(f"{reverse('proposals:listar')}?format=json")
 
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(len(resposta.json()["resultados"]), 1)
         self.assertEqual(resposta.json()["resultados"][0]["empresa_id"], self.empresa.id)
+
+    def test_listar_propostas_renderiza_template_institucional(self):
+        self.criar_proposta()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("proposals:listar"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Mostrando 1 Propostas")
+        self.assertContains(resposta, "data-table")
+
+    def test_listar_propostas_filtra_por_cliente_e_status(self):
+        self.criar_proposta(status=Proposta.Status.ENVIADA)
+        outro_cliente = Cliente.objects.create(
+            empresa=self.empresa,
+            nome="Cliente Secundario",
+            tipo=Cliente.Tipo.PESSOA_JURIDICA,
+        )
+        ServicoProposta.criar_proposta(
+            empresa_id=self.empresa.id,
+            cliente_id=outro_cliente.id,
+            titulo="Proposta paralela",
+            valor=Decimal("500.00"),
+            criado_por=self.usuario,
+            status=Proposta.Status.RASCUNHO,
+        )
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(
+            reverse("proposals:listar"),
+            {"cliente": "Teste", "status": Proposta.Status.ENVIADA},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Mostrando 1 Propostas")
+        self.assertContains(resposta, "Proposta de Servicos")
+        self.assertNotContains(resposta, "Proposta paralela")
+
+    def test_listar_propostas_json_aplica_filtros(self):
+        self.criar_proposta()
+        ServicoProposta.criar_proposta(
+            empresa_id=self.empresa.id,
+            cliente_id=self.cliente.id,
+            titulo="Proposta consultiva",
+            valor=Decimal("700.00"),
+            criado_por=self.usuario,
+        )
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(
+            reverse("proposals:listar"),
+            {"format": "json", "texto": "consultiva"},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(len(resposta.json()["resultados"]), 1)
+        self.assertEqual(resposta.json()["resultados"][0]["titulo"], "Proposta consultiva")
 
     def test_criar_proposta_via_view(self):
         self.client.force_login(self.usuario)
@@ -241,6 +298,54 @@ class ViewsPropostaTestCase(PropostaBaseTestCase):
         self.assertEqual(resposta.json()["titulo"], "Proposta via view")
         self.assertEqual(resposta.json()["valor_final"], "1900.00")
 
+    def test_criar_proposta_via_formulario_institucional(self):
+        self.client.force_login(self.usuario)
+
+        resposta_get = self.client.get(reverse("proposals:criar"))
+        self.assertEqual(resposta_get.status_code, 200)
+        self.assertContains(resposta_get, "Nova proposta")
+
+        resposta_post = self.client.post(
+            reverse("proposals:criar"),
+            data={
+                "cliente_id": self.cliente.id,
+                "titulo": "Proposta formulario",
+                "descricao": "Criada pela tela",
+                "valor": "2000.00",
+                "desconto": "10.00",
+                "valido_ate": "",
+            },
+        )
+
+        proposta = Proposta.objects.get(titulo="Proposta formulario")
+        self.assertRedirects(resposta_post, reverse("proposals:detalhe", args=[proposta.id]))
+
+    def test_editar_proposta_via_formulario_institucional(self):
+        proposta = self.criar_proposta()
+        self.client.force_login(self.usuario)
+
+        resposta_get = self.client.get(reverse("proposals:editar", args=[proposta.id]))
+        self.assertEqual(resposta_get.status_code, 200)
+        self.assertContains(resposta_get, "Editar proposta")
+
+        resposta_post = self.client.post(
+            reverse("proposals:editar", args=[proposta.id]),
+            data={
+                "cliente_id": self.cliente.id,
+                "titulo": "Proposta atualizada pela tela",
+                "descricao": "Descricao atualizada",
+                "valor": "3000.00",
+                "desconto": "20.00",
+                "valido_ate": "",
+            },
+        )
+
+        proposta.refresh_from_db()
+        self.assertRedirects(resposta_post, reverse("proposals:detalhe", args=[proposta.id]))
+        self.assertEqual(proposta.titulo, "Proposta atualizada pela tela")
+        self.assertEqual(proposta.valor_final, Decimal("2400.00"))
+        self.assertTrue(proposta.historicos.filter(acao="editada").exists())
+
     def test_detalhe_nao_expoe_proposta_de_outra_empresa(self):
         proposta = self.criar_proposta()
         self.client.force_login(self.usuario_outra_empresa)
@@ -248,6 +353,16 @@ class ViewsPropostaTestCase(PropostaBaseTestCase):
         resposta = self.client.get(reverse("proposals:detalhe", args=[proposta.id]))
 
         self.assertEqual(resposta.status_code, 404)
+
+    def test_detalhe_proposta_renderiza_template_institucional(self):
+        proposta = self.criar_proposta()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("proposals:detalhe", args=[proposta.id]))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Dados da proposta")
+        self.assertContains(resposta, proposta.titulo)
 
     def test_alterar_status_via_view(self):
         proposta = self.criar_proposta()
@@ -263,6 +378,20 @@ class ViewsPropostaTestCase(PropostaBaseTestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(proposta.status, Proposta.Status.ENVIADA)
 
+    def test_alterar_status_via_formulario_institucional(self):
+        proposta = self.criar_proposta()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("proposals:alterar_status", args=[proposta.id]),
+            data={"status": Proposta.Status.ACEITA, "interface": "institucional"},
+        )
+
+        proposta.refresh_from_db()
+        self.assertRedirects(resposta, reverse("proposals:detalhe", args=[proposta.id]))
+        self.assertEqual(proposta.status, Proposta.Status.ACEITA)
+        self.assertTrue(proposta.historicos.filter(acao="editada").exists())
+
     def test_converter_proposta_via_view(self):
         proposta = self.criar_proposta(status=Proposta.Status.ACEITA)
         self.client.force_login(self.usuario)
@@ -273,3 +402,16 @@ class ViewsPropostaTestCase(PropostaBaseTestCase):
         self.assertEqual(resposta.status_code, 201)
         self.assertEqual(proposta.status, Proposta.Status.CONVERTIDA)
         self.assertEqual(resposta.json()["contrato"]["status"], Contrato.Status.ATIVO)
+
+    def test_converter_proposta_via_formulario_institucional(self):
+        proposta = self.criar_proposta(status=Proposta.Status.ACEITA)
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("proposals:converter", args=[proposta.id]),
+            data={"interface": "institucional"},
+        )
+
+        proposta.refresh_from_db()
+        self.assertEqual(proposta.status, Proposta.Status.CONVERTIDA)
+        self.assertRedirects(resposta, reverse("contracts:detalhe", args=[proposta.contrato_id]))

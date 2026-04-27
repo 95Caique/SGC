@@ -1,0 +1,92 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Propostas - ContraFlow{% endblock %}
+{% block breadcrumb %}Propostas{% endblock %}
+{% block page_title %}Propostas{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <form class="filter-box" method="get">
+        <span class="filter-title">FILTROS:</span>
+        <label>
+            <span>Texto:</span>
+            <input type="text" name="texto" value="{{ filtros.texto }}">
+        </label>
+        <label>
+            <span>Cliente:</span>
+            <input type="text" name="cliente" value="{{ filtros.cliente }}" placeholder="Todos">
+        </label>
+        <label>
+            <span>Status:</span>
+            <select name="status">
+                <option value="">Todos</option>
+                {% for valor, rotulo in status_choices %}
+                    <option value="{{ valor }}"{% if filtros.status == valor %} selected{% endif %}>{{ rotulo }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Valida de:</span>
+            <input type="date" name="validade_inicio" value="{{ filtros.validade_inicio }}">
+        </label>
+        <label>
+            <span>Valida ate:</span>
+            <input type="date" name="validade_fim" value="{{ filtros.validade_fim }}">
+        </label>
+        <button class="button button-filter" type="submit">Filtrar</button>
+    </form>
+
+    <div class="tabs">
+        <a class="tab active" href="{% url 'proposals:listar' %}">Pendentes <span>{{ total_propostas }}</span></a>
+        <a class="tab" href="{% url 'proposals:listar' %}?status=convertida">Convertidas</a>
+        <a class="tab" href="{% url 'proposals:listar' %}">Todas</a>
+        <a class="tab action-tab" href="{% url 'proposals:criar' %}">Adicionar</a>
+    </div>
+
+    <div class="list-meta">Mostrando {{ total_propostas }} Propostas</div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Acoes</th>
+                    <th>Codigo</th>
+                    <th>Titulo</th>
+                    <th>Cliente</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Datas</th>
+                    <th>Opcoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proposta in propostas %}
+                    <tr>
+                        <td class="row-actions">
+                            <a class="round-action" href="{% url 'proposals:detalhe' proposta.id %}" title="Detalhar">◉</a>
+                            <a class="round-action" href="{% url 'proposals:editar' proposta.id %}" title="Editar">✎</a>
+                        </td>
+                        <td>#{{ proposta.id }}</td>
+                        <td><a class="table-link" href="{% url 'proposals:detalhe' proposta.id %}">{{ proposta.titulo }}</a></td>
+                        <td>{{ proposta.cliente.nome }}</td>
+                        <td>R$ {{ proposta.valor_final }}</td>
+                        <td><span class="badge badge-{{ proposta.status }}">{{ proposta.get_status_display }}</span></td>
+                        <td>{% if proposta.valido_ate %}Valida ate {{ proposta.valido_ate|date:"d/m/Y" }}{% else %}Sem validade{% endif %}</td>
+                        <td><a class="button button-small button-muted" href="{% url 'proposals:detalhe' proposta.id %}">Dashboard</a></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="empty-state">Nenhuma proposta cadastrada.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td>R$ {{ total_valor_propostas }}</td>
+                    <td colspan="3">{{ total_propostas }} proposta(s)</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

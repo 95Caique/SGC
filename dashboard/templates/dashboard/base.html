@@ -1,0 +1,110 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ContraFlow{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'dashboard/css/institucional.css' %}">
+</head>
+<body>
+    <input class="sidebar-toggle-input" type="checkbox" id="sidebar-toggle">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <strong>contraflow</strong>
+                <span class="notification-dot">9+</span>
+            </div>
+
+            <div class="sidebar-user">
+                <span class="avatar">{{ request.user.username|first|upper }}</span>
+                <div>
+                    <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                    <small>{% if request.user.empresa %}{{ request.user.empresa.nome }}{% elif request.user.is_superuser %}Acesso global{% else %}Sem empresa{% endif %}</small>
+                </div>
+                <a class="profile-button" href="/admin/accounts/usuariocustomizado/{{ request.user.id }}/change/">●</a>
+            </div>
+
+            <label class="menu-search">
+                <span>⌕</span>
+                <input type="search" placeholder="Buscar Menu">
+            </label>
+
+            <div class="sidebar-rule"></div>
+
+            <div class="nav-section-title">Modulo principal</div>
+
+            <nav class="sidebar-nav" aria-label="Navegacao principal">
+                <a class="nav-item active" href="{% url 'dashboard:interface' %}">
+                    <span class="nav-icon">⌂</span>
+                    <span>Inicio</span>
+                </a>
+                <a class="nav-item" href="{% url 'contracts:listar' %}">
+                    <span class="nav-icon">▣</span>
+                    <span>Contratos</span>
+                </a>
+                <a class="nav-item" href="{% url 'proposals:listar' %}">
+                    <span class="nav-icon">▧</span>
+                    <span>Propostas</span>
+                </a>
+                <a class="nav-item" href="{% url 'clients:listar' %}">
+                    <span class="nav-icon">◉</span>
+                    <span>Clientes</span>
+                </a>
+                <a class="nav-item" href="{% url 'companies:listar' %}">
+                    <span class="nav-icon">▥</span>
+                    <span>Empresas</span>
+                </a>
+                <a class="nav-item" href="{% url 'dashboard:administracao' %}">
+                    <span class="nav-icon">☷</span>
+                    <span>Administracao</span>
+                </a>
+                <a class="nav-item" href="{% url 'dashboard:relatorios' %}">
+                    <span class="nav-icon">◫</span>
+                    <span>Relatorios</span>
+                </a>
+                <a class="nav-item" href="/admin/logout/">
+                    <span class="nav-icon">↪</span>
+                    <span>Sair</span>
+                </a>
+            </nav>
+
+            <div class="nav-section-title">Institucional</div>
+
+            <nav class="sidebar-nav compact" aria-label="Navegacao secundaria">
+                <a class="nav-item" href="{% url 'accounts:gestao_pessoas' %}">
+                    <span class="nav-icon">◇</span>
+                    <span>Gestao de Pessoas</span>
+                </a>
+                <a class="nav-item" href="{% url 'dashboard:central_servicos' %}">
+                    <span class="nav-icon">▤</span>
+                    <span>Central de Servicos</span>
+                </a>
+                <a class="nav-item" href="/admin/">
+                    <span class="nav-icon">◌</span>
+                    <span>Documentos</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <label class="sidebar-toggle" for="sidebar-toggle" aria-label="Alternar menu">☰</label>
+                <div>
+                    <p class="breadcrumb">Inicio › {% block breadcrumb %}Painel{% endblock %}</p>
+                    <h1>{% block page_title %}Painel institucional{% endblock %}</h1>
+                </div>
+                <div class="user-box">
+                    <a class="button button-success" href="{% url 'contracts:criar' %}">Adicionar Contrato</a>
+                    <a class="help-button" href="/admin/">Ajuda</a>
+                </div>
+            </header>
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

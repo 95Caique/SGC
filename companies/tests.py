@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import UsuarioCustomizado
@@ -85,3 +86,23 @@ class ServicoEmpresaTestCase(TestCase):
         self.assertEqual(relatorio[0]["nome"], "Cliente Teste")
         self.assertEqual(relatorio[0]["total_contratos"], 2)
         self.assertEqual(relatorio[0]["valor_total"], Decimal("1500.00"))
+
+
+class ViewsEmpresaTestCase(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome="Empresa Teste", cnpj="12.345.678/0001-90")
+        self.usuario = UsuarioCustomizado.objects.create_user(
+            username="adminempresa",
+            password="senha123",
+            empresa=self.empresa,
+            funcao=UsuarioCustomizado.Funcao.ADMINISTRADOR,
+        )
+
+    def test_listar_empresas_renderiza_template_institucional(self):
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("companies:listar"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Mostrando 1 Empresas")
+        self.assertContains(resposta, "data-table")

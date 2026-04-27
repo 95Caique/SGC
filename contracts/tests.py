@@ -181,11 +181,69 @@ class ViewsContratoTestCase(ContratoBaseTestCase):
         self.criar_contrato()
         self.client.force_login(self.usuario)
 
-        resposta = self.client.get(reverse("contracts:listar"))
+        resposta = self.client.get(f"{reverse('contracts:listar')}?format=json")
 
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(len(resposta.json()["resultados"]), 1)
         self.assertEqual(resposta.json()["resultados"][0]["empresa_id"], self.empresa.id)
+
+    def test_listar_contratos_renderiza_template_institucional(self):
+        self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("contracts:listar"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Mostrando 1 Contratos")
+        self.assertContains(resposta, "data-table")
+
+    def test_listar_contratos_filtra_por_texto_e_status(self):
+        contrato = self.criar_contrato()
+        ServicoContrato.alterar_status(
+            contrato=contrato,
+            usuario=self.usuario,
+            status=Contrato.Status.SUSPENSO,
+        )
+        ServicoContrato.criar_contrato(
+            empresa_id=self.empresa.id,
+            cliente_id=self.cliente.id,
+            titulo="Contrato recorrente",
+            valor_mensal=Decimal("700.00"),
+            data_inicio=timezone.localdate(),
+            criado_por=self.usuario,
+        )
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(
+            reverse("contracts:listar"),
+            {"texto": "Servicos", "status": Contrato.Status.SUSPENSO},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Mostrando 1 Contratos")
+        self.assertContains(resposta, "Contrato de Servicos")
+        self.assertNotContains(resposta, "Contrato recorrente")
+
+    def test_listar_contratos_json_aplica_filtros(self):
+        self.criar_contrato()
+        ServicoContrato.criar_contrato(
+            empresa_id=self.empresa.id,
+            cliente_id=self.cliente.id,
+            titulo="Contrato avulso",
+            valor_mensal=Decimal("500.00"),
+            data_inicio=timezone.localdate(),
+            criado_por=self.usuario,
+        )
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(
+            reverse("contracts:listar"),
+            {"format": "json", "texto": "avulso"},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(len(resposta.json()["resultados"]), 1)
+        self.assertEqual(resposta.json()["resultados"][0]["titulo"], "Contrato avulso")
 
     def test_criar_contrato_via_view(self):
         self.client.force_login(self.usuario)
@@ -204,6 +262,54 @@ class ViewsContratoTestCase(ContratoBaseTestCase):
         self.assertEqual(resposta.status_code, 201)
         self.assertEqual(resposta.json()["titulo"], "Contrato via view")
 
+    def test_criar_contrato_via_formulario_institucional(self):
+        self.client.force_login(self.usuario)
+
+        resposta_get = self.client.get(reverse("contracts:criar"))
+        self.assertEqual(resposta_get.status_code, 200)
+        self.assertContains(resposta_get, "Novo contrato")
+
+        resposta_post = self.client.post(
+            reverse("contracts:criar"),
+            data={
+                "cliente_id": self.cliente.id,
+                "titulo": "Contrato formulario",
+                "descricao": "Criado pela tela",
+                "valor_mensal": "3200.00",
+                "data_inicio": timezone.localdate().isoformat(),
+                "data_fim": "",
+            },
+        )
+
+        contrato = Contrato.objects.get(titulo="Contrato formulario")
+        self.assertRedirects(resposta_post, reverse("contracts:detalhe", args=[contrato.id]))
+
+    def test_editar_contrato_via_formulario_institucional(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta_get = self.client.get(reverse("contracts:editar", args=[contrato.id]))
+        self.assertEqual(resposta_get.status_code, 200)
+        self.assertContains(resposta_get, "Editar contrato")
+
+        resposta_post = self.client.post(
+            reverse("contracts:editar", args=[contrato.id]),
+            data={
+                "cliente_id": self.cliente.id,
+                "titulo": "Contrato atualizado pela tela",
+                "descricao": "Descricao atualizada",
+                "valor_mensal": "4200.00",
+                "data_inicio": timezone.localdate().isoformat(),
+                "data_fim": "",
+            },
+        )
+
+        contrato.refresh_from_db()
+        self.assertRedirects(resposta_post, reverse("contracts:detalhe", args=[contrato.id]))
+        self.assertEqual(contrato.titulo, "Contrato atualizado pela tela")
+        self.assertEqual(contrato.valor_mensal, Decimal("4200.00"))
+        self.assertTrue(contrato.historicos.filter(acao="editado").exists())
+
     def test_detalhe_nao_expoe_contrato_de_outra_empresa(self):
         contrato = self.criar_contrato()
         self.client.force_login(self.usuario_outra_empresa)
@@ -211,6 +317,16 @@ class ViewsContratoTestCase(ContratoBaseTestCase):
         resposta = self.client.get(reverse("contracts:detalhe", args=[contrato.id]))
 
         self.assertEqual(resposta.status_code, 404)
+
+    def test_detalhe_contrato_renderiza_template_institucional(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("contracts:detalhe", args=[contrato.id]))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Dados do contrato")
+        self.assertContains(resposta, contrato.titulo)
 
     def test_alterar_status_via_view(self):
         contrato = self.criar_contrato()
@@ -226,7 +342,33 @@ class ViewsContratoTestCase(ContratoBaseTestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(contrato.status, Contrato.Status.SUSPENSO)
 
+    def test_alterar_status_via_formulario_institucional(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("contracts:alterar_status", args=[contrato.id]),
+            data={"status": Contrato.Status.ENCERRADO, "interface": "institucional"},
+        )
+
+        contrato.refresh_from_db()
+        self.assertRedirects(resposta, reverse("contracts:detalhe", args=[contrato.id]))
+        self.assertEqual(contrato.status, Contrato.Status.ENCERRADO)
+        self.assertTrue(contrato.historicos.filter(acao="editado").exists())
+
     def test_upload_arquivo_via_view(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            f"{reverse('contracts:upload_arquivo', args=[contrato.id])}?format=json",
+            data={"arquivo": SimpleUploadedFile("contrato.pdf", b"arquivo")},
+        )
+
+        self.assertEqual(resposta.status_code, 201)
+        self.assertEqual(resposta.json()["versao"], 1)
+
+    def test_upload_arquivo_via_formulario_institucional(self):
         contrato = self.criar_contrato()
         self.client.force_login(self.usuario)
 
@@ -235,5 +377,22 @@ class ViewsContratoTestCase(ContratoBaseTestCase):
             data={"arquivo": SimpleUploadedFile("contrato.pdf", b"arquivo")},
         )
 
-        self.assertEqual(resposta.status_code, 201)
-        self.assertEqual(resposta.json()["versao"], 1)
+        self.assertRedirects(resposta, reverse("contracts:detalhe", args=[contrato.id]))
+        self.assertEqual(contrato.arquivos.count(), 1)
+        self.assertEqual(contrato.arquivos.first().versao, 1)
+
+    def test_detalhe_contrato_exibe_arquivos_versionados(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario)
+        ServicoContrato.adicionar_arquivo(
+            contrato=contrato,
+            arquivo=SimpleUploadedFile("contrato.pdf", b"arquivo"),
+            usuario=self.usuario,
+        )
+
+        resposta = self.client.get(reverse("contracts:detalhe", args=[contrato.id]))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Arquivos versionados")
+        self.assertContains(resposta, "v1")
+        self.assertContains(resposta, "v1.pdf")

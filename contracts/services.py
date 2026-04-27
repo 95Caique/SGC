@@ -34,7 +34,10 @@ class ServicoContrato:
         if not VerificadorPermissoes.usuario_pode_criar(criado_por):
             raise ErroPermissao("Usuario nao possui permissao para criar contratos.")
 
-        if criado_por.empresa_id != empresa_id:
+        if (
+            not VerificadorPermissoes.usuario_tem_acesso_global(criado_por)
+            and criado_por.empresa_id != empresa_id
+        ):
             raise ErroAcessoEmpresaNegado("Usuario nao pertence a empresa informada.")
 
         contrato = Contrato.objects.create(

@@ -1,0 +1,92 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Contratos - ContraFlow{% endblock %}
+{% block breadcrumb %}Contratos{% endblock %}
+{% block page_title %}Contratos{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <form class="filter-box" method="get">
+        <span class="filter-title">FILTROS:</span>
+        <label>
+            <span>Texto:</span>
+            <input type="text" name="texto" value="{{ filtros.texto }}">
+        </label>
+        <label>
+            <span>Cliente:</span>
+            <input type="text" name="cliente" value="{{ filtros.cliente }}" placeholder="Todos">
+        </label>
+        <label>
+            <span>Status:</span>
+            <select name="status">
+                <option value="">Todos</option>
+                {% for valor, rotulo in status_choices %}
+                    <option value="{{ valor }}"{% if filtros.status == valor %} selected{% endif %}>{{ rotulo }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Inicio de:</span>
+            <input type="date" name="data_inicio" value="{{ filtros.data_inicio }}">
+        </label>
+        <label>
+            <span>Fim ate:</span>
+            <input type="date" name="data_fim" value="{{ filtros.data_fim }}">
+        </label>
+        <button class="button button-filter" type="submit">Filtrar</button>
+    </form>
+
+    <div class="tabs">
+        <a class="tab active" href="{% url 'contracts:listar' %}">Ativos <span>{{ total_contratos }}</span></a>
+        <a class="tab" href="{% url 'contracts:listar' %}?status=encerrado">Concluidos</a>
+        <a class="tab" href="{% url 'contracts:listar' %}">Todos</a>
+        <a class="tab action-tab" href="{% url 'contracts:criar' %}">Adicionar</a>
+    </div>
+
+    <div class="list-meta">Mostrando {{ total_contratos }} Contratos</div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Acoes</th>
+                    <th>Codigo</th>
+                    <th>Titulo</th>
+                    <th>Cliente</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Datas</th>
+                    <th>Opcoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contrato in contratos %}
+                    <tr>
+                        <td class="row-actions">
+                            <a class="round-action" href="{% url 'contracts:detalhe' contrato.id %}" title="Detalhar">◉</a>
+                            <a class="round-action" href="{% url 'contracts:editar' contrato.id %}" title="Editar">✎</a>
+                        </td>
+                        <td>#{{ contrato.id }}</td>
+                        <td><a class="table-link" href="{% url 'contracts:detalhe' contrato.id %}">{{ contrato.titulo }}</a></td>
+                        <td>{{ contrato.cliente.nome }}</td>
+                        <td>R$ {{ contrato.valor_mensal }}</td>
+                        <td><span class="badge badge-{{ contrato.status }}">{{ contrato.get_status_display }}</span></td>
+                        <td>{{ contrato.data_inicio|date:"d/m/Y" }}{% if contrato.data_fim %} a {{ contrato.data_fim|date:"d/m/Y" }}{% endif %}</td>
+                        <td><a class="button button-small button-muted" href="{% url 'contracts:detalhe' contrato.id %}">Dashboard</a></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="empty-state">Nenhum contrato cadastrado.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td>R$ {{ total_valor_contratos }}</td>
+                    <td colspan="3">{{ total_contratos }} contrato(s)</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

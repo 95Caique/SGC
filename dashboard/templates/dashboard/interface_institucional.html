@@ -1,0 +1,165 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Painel - ContraFlow{% endblock %}
+{% block breadcrumb %}Gestao de Contratos{% endblock %}
+{% block page_title %}Contratos e Propostas{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    {% if sem_empresa %}
+        <div class="notice">
+            Vincule este usuario a uma empresa no Django Admin para visualizar contratos, propostas e metricas.
+        </div>
+    {% endif %}
+
+    <form class="filter-box">
+        <span class="filter-title">FILTROS:</span>
+        <label>
+            <span>Texto:</span>
+            <input type="text" name="texto">
+        </label>
+        <label>
+            <span>Cliente:</span>
+            <input type="text" name="cliente" placeholder="Todos">
+        </label>
+        <label>
+            <span>Status:</span>
+            <input type="text" name="status" placeholder="Todos">
+        </label>
+        <label>
+            <span>Periodo:</span>
+            <input type="text" name="periodo" placeholder="Todos">
+        </label>
+        <button class="button button-filter" type="button">Filtrar</button>
+    </form>
+
+    <div class="metric-grid">
+        <article class="metric-card">
+            <span>Clientes ativos</span>
+            <strong>{{ metricas.total_clientes }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Faturamento</span>
+            <strong>R$ {{ metricas.faturamento_mensal }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Contratos ativos</span>
+            <strong>{{ metricas.total_contratos_ativos }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Propostas</span>
+            <strong>{{ metricas.propostas_pendentes }}</strong>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="tabs">
+        <a class="tab active" href="#contratos">Contratos <span>{{ total_contratos }}</span></a>
+        <a class="tab" href="#propostas">Propostas <span>{{ total_propostas }}</span></a>
+        <a class="tab" href="{% url 'dashboard:saude' %}">Todos</a>
+    </div>
+
+    <div class="list-meta">
+        Mostrando {{ total_contratos }} Contratos
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Acoes</th>
+                    <th>Codigo</th>
+                    <th>Titulo</th>
+                    <th>Cliente</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Datas</th>
+                    <th>Opcoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contrato in contratos %}
+                    <tr>
+                        <td class="row-actions">
+                            <a class="round-action" href="{% url 'contracts:detalhe' contrato.id %}" title="Detalhar">◉</a>
+                            <a class="round-action" href="{% url 'contracts:editar' contrato.id %}" title="Editar">✎</a>
+                        </td>
+                        <td>#{{ contrato.id }}</td>
+                        <td><a class="table-link" href="{% url 'contracts:detalhe' contrato.id %}">{{ contrato.titulo }}</a></td>
+                        <td>{{ contrato.cliente.nome }}</td>
+                        <td>R$ {{ contrato.valor_mensal }}</td>
+                        <td><span class="badge badge-{{ contrato.status }}">{{ contrato.get_status_display }}</span></td>
+                        <td>{{ contrato.data_inicio|date:"d/m/Y" }}{% if contrato.data_fim %} a {{ contrato.data_fim|date:"d/m/Y" }}{% endif %}</td>
+                        <td class="actions">
+                            <a class="button button-small button-muted" href="{% url 'dashboard:metricas' %}">Dashboard</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="empty-state">Nenhum contrato cadastrado.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td>R$ {{ total_valor_contratos }}</td>
+                    <td colspan="3">{{ total_contratos }} contrato(s)</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="page-section" id="propostas">
+    <div class="list-meta">
+        Mostrando {{ total_propostas }} Propostas
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Acoes</th>
+                    <th>Codigo</th>
+                    <th>Titulo</th>
+                    <th>Cliente</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Datas</th>
+                    <th>Opcoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proposta in propostas %}
+                    <tr>
+                        <td class="row-actions">
+                            <a class="round-action" href="{% url 'proposals:detalhe' proposta.id %}" title="Detalhar">◉</a>
+                            <a class="round-action" href="{% url 'proposals:editar' proposta.id %}" title="Editar">✎</a>
+                        </td>
+                        <td>#{{ proposta.id }}</td>
+                        <td><a class="table-link" href="{% url 'proposals:detalhe' proposta.id %}">{{ proposta.titulo }}</a></td>
+                        <td>{{ proposta.cliente.nome }}</td>
+                        <td>R$ {{ proposta.valor_final }}</td>
+                        <td><span class="badge badge-{{ proposta.status }}">{{ proposta.get_status_display }}</span></td>
+                        <td>{% if proposta.valido_ate %}Valida ate {{ proposta.valido_ate|date:"d/m/Y" }}{% else %}Sem validade{% endif %}</td>
+                        <td class="actions">
+                            <a class="button button-small button-muted" href="{% url 'dashboard:metricas' %}">Dashboard</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="empty-state">Nenhuma proposta cadastrada.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td>R$ {{ total_valor_propostas }}</td>
+                    <td colspan="3">{{ total_propostas }} proposta(s)</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Clientes - ContraFlow{% endblock %}
+{% block breadcrumb %}Clientes{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <form class="filter-box" method="get">
+        <span class="filter-title">FILTROS:</span>
+        <label>
+            <span>Texto:</span>
+            <input type="text" name="texto" value="{{ filtros.texto }}">
+        </label>
+        <label>
+            <span>Tipo:</span>
+            <select name="tipo">
+                <option value="">Todos</option>
+                {% for valor, rotulo in tipo_choices %}
+                    <option value="{{ valor }}"{% if filtros.tipo == valor %} selected{% endif %}>{{ rotulo }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Email:</span>
+            <input type="text" name="email" value="{{ filtros.email }}" placeholder="Todos">
+        </label>
+        <label>
+            <span>Contato:</span>
+            <input type="text" name="contato" value="{{ filtros.contato }}" placeholder="Todos">
+        </label>
+        <button class="button button-filter" type="submit">Filtrar</button>
+    </form>
+
+    <div class="tabs">
+        <a class="tab active" href="{% url 'clients:listar' %}">Ativos <span>{{ total_clientes }}</span></a>
+        <a class="tab" href="{% url 'clients:listar' %}">Todos</a>
+        <a class="tab action-tab" href="{% url 'clients:criar' %}">Adicionar</a>
+    </div>
+
+    <div class="list-meta">Mostrando {{ total_clientes }} Clientes</div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Acoes</th>
+                    <th>Codigo</th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Tipo</th>
+                    <th>Contatos</th>
+                    <th>Opcoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                    <tr>
+                        <td class="row-actions">
+                            <a class="round-action" href="{% url 'clients:detalhe' cliente.id %}" title="Detalhar">◉</a>
+                            <a class="round-action" href="{% url 'clients:editar' cliente.id %}" title="Editar">✎</a>
+                        </td>
+                        <td>#{{ cliente.id }}</td>
+                        <td><a class="table-link" href="{% url 'clients:detalhe' cliente.id %}">{{ cliente.nome }}</a></td>
+                        <td>{{ cliente.email|default:"-" }}</td>
+                        <td>{{ cliente.get_tipo_display }}</td>
+                        <td>{{ cliente.contatos.count }}</td>
+                        <td><a class="button button-small button-muted" href="{% url 'clients:detalhe' cliente.id %}">Dashboard</a></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="empty-state">Nenhum cliente cadastrado.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td colspan="3">{{ total_clientes }} cliente(s)</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

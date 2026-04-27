@@ -1,0 +1,41 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Administracao - ContraFlow{% endblock %}
+{% block breadcrumb %}Administracao{% endblock %}
+{% block page_title %}Administracao{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="list-meta">Modulos administrativos</div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Modulo</th>
+                    <th>Descricao</th>
+                    <th>Situacao</th>
+                    <th>Opcoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="table-link">Empresas</span></td>
+                    <td>Cadastro e visualizacao das empresas vinculadas.</td>
+                    <td><span class="badge badge-ativo">Disponivel</span></td>
+                    <td><a class="button button-small button-muted" href="{% url 'companies:listar' %}">Acessar</a></td>
+                </tr>
+                <tr>
+                    <td><span class="table-link">Gestao de Pessoas</span></td>
+                    <td>Usuarios, funcoes e vinculos por empresa.</td>
+                    <td><span class="badge badge-ativo">Disponivel</span></td>
+                    <td><a class="button button-small button-muted" href="{% url 'accounts:gestao_pessoas' %}">Acessar</a></td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="2">Total</td>
+                    <td colspan="2">2 modulo(s)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
+from clients.models import Cliente
 from contracts.models import Contrato
 from proposals.models import Proposta
 
@@ -8,18 +9,19 @@ from proposals.models import Proposta
 class ServicoPainel:
     @staticmethod
     def obter_metricas_gerais(empresa):
-        contratos_ativos = Contrato.objects.filter(
-            empresa=empresa,
-            status=Contrato.Status.ATIVO,
-        )
+        contratos_ativos = Contrato.objects.filter(status=Contrato.Status.ATIVO)
         propostas_pendentes = Proposta.objects.filter(
-            empresa=empresa,
             status__in=[Proposta.Status.RASCUNHO, Proposta.Status.ENVIADA],
         )
+        clientes = Cliente.objects.all()
+        if empresa:
+            contratos_ativos = contratos_ativos.filter(empresa=empresa)
+            propostas_pendentes = propostas_pendentes.filter(empresa=empresa)
+            clientes = clientes.filter(empresa=empresa)
 
         return {
             "total_contratos_ativos": contratos_ativos.count(),
-            "total_clientes": empresa.clientes.count(),
+            "total_clientes": clientes.count(),
             "faturamento_mensal": contratos_ativos.aggregate(total=Sum("valor_mensal"))["total"] or 0,
             "propostas_pendentes": propostas_pendentes.count(),
         }
@@ -28,23 +30,30 @@ class ServicoPainel:
     def obter_contratos_proximos_vencimento(empresa, dias=30):
         hoje = timezone.localdate()
         limite = hoje + timezone.timedelta(days=dias)
-        return Contrato.objects.filter(
-            empresa=empresa,
+        contratos = Contrato.objects.filter(
             status=Contrato.Status.ATIVO,
             data_fim__range=(hoje, limite),
-        ).select_related("cliente")
+        )
+        if empresa:
+            contratos = contratos.filter(empresa=empresa)
+        return contratos.select_related("cliente")
 
     @staticmethod
     def obter_propostas_pendentes(empresa):
-        return Proposta.objects.filter(
-            empresa=empresa,
+        propostas = Proposta.objects.filter(
             status__in=[Proposta.Status.RASCUNHO, Proposta.Status.ENVIADA],
-        ).select_related("cliente")
+        )
+        if empresa:
+            propostas = propostas.filter(empresa=empresa)
+        return propostas.select_related("cliente")
 
     @staticmethod
     def obter_faturamento_por_cliente(empresa):
+        clientes = Cliente.objects.all()
+        if empresa:
+            clientes = clientes.filter(empresa=empresa)
         return (
-            empresa.clientes.annotate(
+            clientes.annotate(
                 faturamento_mensal=Sum(
                     "contratos__valor_mensal",
                     filter=Q(contratos__status=Contrato.Status.ATIVO),
@@ -60,11 +69,12 @@ class ServicoPainel:
 
     @staticmethod
     def obter_saude_contratos(empresa):
-        total = Contrato.objects.filter(empresa=empresa).count()
+        contratos = Contrato.objects.all()
+        if empresa:
+            contratos = contratos.filter(empresa=empresa)
+        total = contratos.count()
         por_status = dict(
-            Contrato.objects.filter(empresa=empresa)
-            .values_list("status")
-            .annotate(total=Count("id"))
+            contratos.values_list("status").annotate(total=Count("id"))
         )
 
         return {
@@ -78,11 +88,12 @@ class ServicoPainel:
 
     @staticmethod
     def obter_saude_propostas(empresa):
-        total = Proposta.objects.filter(empresa=empresa).count()
+        propostas = Proposta.objects.all()
+        if empresa:
+            propostas = propostas.filter(empresa=empresa)
+        total = propostas.count()
         por_status = dict(
-            Proposta.objects.filter(empresa=empresa)
-            .values_list("status")
-            .annotate(total=Count("id"))
+            propostas.values_list("status").annotate(total=Count("id"))
         )
 
         return {

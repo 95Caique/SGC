@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Central de Servicos - ContraFlow{% endblock %}
+{% block breadcrumb %}Central de Servicos{% endblock %}
+{% block page_title %}Central de Servicos{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="tabs">
+        <a class="tab active" href="{% url 'dashboard:central_servicos' %}">Solicitacoes <span>3</span></a>
+        <a class="tab" href="{% url 'dashboard:central_servicos' %}">Concluidas</a>
+        <a class="tab" href="{% url 'dashboard:central_servicos' %}">Todas</a>
+    </div>
+    <div class="list-meta">Mostrando servicos disponiveis</div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Codigo</th>
+                    <th>Servico</th>
+                    <th>Descricao</th>
+                    <th>Situacao</th>
+                    <th>Opcoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>#1</td>
+                    <td><span class="table-link">Suporte a contratos</span></td>
+                    <td>Apoio para cadastro, status e arquivos.</td>
+                    <td><span class="badge badge-enviada">Aberto</span></td>
+                    <td><button class="button button-small button-muted" type="button">Detalhar</button></td>
+                </tr>
+                <tr>
+                    <td>#2</td>
+                    <td><span class="table-link">Revisao de proposta</span></td>
+                    <td>Conferencia de dados antes da conversao.</td>
+                    <td><span class="badge badge-ativo">Disponivel</span></td>
+                    <td><button class="button button-small button-muted" type="button">Detalhar</button></td>
+                </tr>
+                <tr>
+                    <td>#3</td>
+                    <td><span class="table-link">Auditoria</span></td>
+                    <td>Consulta de historico e rastreabilidade.</td>
+                    <td><span class="badge badge-enviada">Aberto</span></td>
+                    <td><button class="button button-small button-muted" type="button">Detalhar</button></td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td colspan="2">3 servico(s)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

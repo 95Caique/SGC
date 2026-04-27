@@ -1,0 +1,51 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Empresas - ContraFlow{% endblock %}
+{% block breadcrumb %}Empresas{% endblock %}
+{% block page_title %}Empresas{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="tabs">
+        <a class="tab active" href="{% url 'companies:listar' %}">Vinculadas <span>{{ total_empresas }}</span></a>
+        <a class="tab" href="{% url 'companies:listar' %}">Todas</a>
+    </div>
+
+    <div class="list-meta">Mostrando {{ total_empresas }} Empresas</div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Codigo</th>
+                    <th>Nome</th>
+                    <th>CNPJ</th>
+                    <th>Email</th>
+                    <th>Telefone</th>
+                    <th>Usuarios</th>
+                    <th>Clientes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for empresa in empresas %}
+                    <tr>
+                        <td>#{{ empresa.id }}</td>
+                        <td><span class="table-link">{{ empresa.nome }}</span></td>
+                        <td>{{ empresa.cnpj }}</td>
+                        <td>{{ empresa.email|default:"-" }}</td>
+                        <td>{{ empresa.telefone|default:"-" }}</td>
+                        <td>{{ empresa.total_usuarios }}</td>
+                        <td>{{ empresa.total_clientes }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7" class="empty-state">Nenhuma empresa vinculada ao usuario.</td></tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="5">Total</td>
+                    <td colspan="2">{{ total_empresas }} empresa(s)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

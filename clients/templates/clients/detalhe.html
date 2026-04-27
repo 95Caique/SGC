@@ -1,0 +1,81 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Cliente #{{ cliente.id }} - ContraFlow{% endblock %}
+{% block breadcrumb %}Clientes › Detalhe{% endblock %}
+{% block page_title %}{{ cliente.nome }}{% endblock %}
+
+{% block content %}
+<section class="page-section detail-grid">
+    <article class="detail-panel">
+        <h2>Dados do cliente</h2>
+        <dl class="definition-list">
+            <dt>Codigo</dt><dd>#{{ cliente.id }}</dd>
+            <dt>Nome</dt><dd>{{ cliente.nome }}</dd>
+            <dt>Email</dt><dd>{{ cliente.email|default:"-" }}</dd>
+            <dt>Tipo</dt><dd>{{ cliente.get_tipo_display }}</dd>
+            <dt>Empresa</dt><dd>{{ cliente.empresa.nome }}</dd>
+        </dl>
+    </article>
+
+    <article class="detail-panel">
+        <h2>Resumo</h2>
+        <dl class="definition-list">
+            <dt>Contratos</dt><dd>{{ cliente.contratos.count }}</dd>
+            <dt>Propostas</dt><dd>{{ cliente.propostas.count }}</dd>
+            <dt>Contatos</dt><dd>{{ cliente.contatos.count }}</dd>
+        </dl>
+    </article>
+</section>
+
+<section class="page-section">
+    <a class="button button-success" href="{% url 'clients:editar' cliente.id %}">Editar cliente</a>
+    <a class="button button-muted" href="{% url 'clients:listar' %}">Voltar</a>
+</section>
+
+<section class="page-section">
+    <div class="list-meta">Contatos do cliente</div>
+    <form class="institutional-form compact-form" method="post" action="{% url 'clients:criar_contato' cliente.id %}">
+        {% csrf_token %}
+        {% if contato_form.non_field_errors %}
+            <div class="notice">{{ contato_form.non_field_errors }}</div>
+        {% endif %}
+        <div class="form-grid">
+            {% for field in contato_form %}
+                <label>
+                    <span>{{ field.label }}</span>
+                    {{ field }}
+                    {% if field.errors %}<small class="form-error">{{ field.errors|striptags }}</small>{% endif %}
+                </label>
+            {% endfor %}
+        </div>
+        <div class="form-actions">
+            <button class="button button-success" type="submit">Adicionar contato</button>
+        </div>
+    </form>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Codigo</th>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contato in cliente.contatos.all %}
+                    <tr>
+                        <td>#{{ contato.id }}</td>
+                        <td>{{ contato.nome }}</td>
+                        <td>{{ contato.telefone|default:"-" }}</td>
+                        <td>{{ contato.email|default:"-" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="empty-state">Nenhum contato cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
