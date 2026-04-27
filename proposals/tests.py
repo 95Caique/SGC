@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import UsuarioCustomizado
@@ -154,3 +155,67 @@ class ConversaoPropostaTestCase(PropostaBaseTestCase):
         contrato.refresh_from_db()
         self.assertEqual(contrato.titulo, "Proposta de Servicos")
         self.assertEqual(contrato.valor_mensal, Decimal("900.00"))
+
+
+class ViewsPropostaTestCase(PropostaBaseTestCase):
+    def test_listar_propostas_filtra_por_empresa_do_usuario(self):
+        self.criar_proposta()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("proposals:listar"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(len(resposta.json()["resultados"]), 1)
+        self.assertEqual(resposta.json()["resultados"][0]["empresa_id"], self.empresa.id)
+
+    def test_criar_proposta_via_view(self):
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("proposals:criar"),
+            data={
+                "cliente_id": self.cliente.id,
+                "titulo": "Proposta via view",
+                "valor": "2000.00",
+                "desconto": "5.00",
+                "valido_ate": (timezone.localdate() + timedelta(days=10)).isoformat(),
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(resposta.status_code, 201)
+        self.assertEqual(resposta.json()["titulo"], "Proposta via view")
+        self.assertEqual(resposta.json()["valor_final"], "1900.00")
+
+    def test_detalhe_nao_expoe_proposta_de_outra_empresa(self):
+        proposta = self.criar_proposta()
+        self.client.force_login(self.usuario_outra_empresa)
+
+        resposta = self.client.get(reverse("proposals:detalhe", args=[proposta.id]))
+
+        self.assertEqual(resposta.status_code, 404)
+
+    def test_alterar_status_via_view(self):
+        proposta = self.criar_proposta()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("proposals:alterar_status", args=[proposta.id]),
+            data={"status": Proposta.Status.ENVIADA},
+            content_type="application/json",
+        )
+
+        proposta.refresh_from_db()
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(proposta.status, Proposta.Status.ENVIADA)
+
+    def test_converter_proposta_via_view(self):
+        proposta = self.criar_proposta(status=Proposta.Status.ACEITA)
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(reverse("proposals:converter", args=[proposta.id]))
+
+        proposta.refresh_from_db()
+        self.assertEqual(resposta.status_code, 201)
+        self.assertEqual(proposta.status, Proposta.Status.CONVERTIDA)
+        self.assertEqual(resposta.json()["contrato"]["status"], Contrato.Status.ATIVO)
