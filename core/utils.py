@@ -40,12 +40,12 @@ class UtilitariosValores:
 
     @staticmethod
     def calcular_percentual(valor, percentual):
-        return (Decimal(valor) * Decimal(percentual)) / Decimal("100")
+        return ((Decimal(valor) * Decimal(percentual)) / Decimal("100")).quantize(Decimal("0.01"))
 
     @staticmethod
     def aplicar_desconto(valor, desconto):
         valor = Decimal(valor)
-        return valor - UtilitariosValores.calcular_percentual(valor, desconto)
+        return (valor - UtilitariosValores.calcular_percentual(valor, desconto)).quantize(Decimal("0.01"))
 
 
 class UtilitariosString:
