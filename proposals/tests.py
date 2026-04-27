@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.core.management import call_command
 
 from accounts.models import UsuarioCustomizado
 from clients.models import Cliente
@@ -155,6 +156,59 @@ class ConversaoPropostaTestCase(PropostaBaseTestCase):
         contrato.refresh_from_db()
         self.assertEqual(contrato.titulo, "Proposta de Servicos")
         self.assertEqual(contrato.valor_mensal, Decimal("900.00"))
+
+
+class LimpezaPropostaTestCase(PropostaBaseTestCase):
+    def test_limpar_propostas_expiradas(self):
+        proposta = ServicoProposta.criar_proposta(
+            empresa_id=self.empresa.id,
+            cliente_id=self.cliente.id,
+            titulo="Proposta vencida",
+            valor=Decimal("1000.00"),
+            valido_ate=timezone.localdate() - timedelta(days=1),
+            criado_por=self.usuario,
+            status=Proposta.Status.ENVIADA,
+        )
+
+        total = ServicoProposta.limpar_propostas_expiradas(usuario=self.usuario)
+
+        proposta.refresh_from_db()
+        self.assertEqual(total, 1)
+        self.assertEqual(proposta.status, Proposta.Status.EXPIRADA)
+        self.assertEqual(proposta.historicos.filter(acao="expirada").count(), 1)
+
+    def test_limpeza_nao_expira_proposta_aceita(self):
+        proposta = ServicoProposta.criar_proposta(
+            empresa_id=self.empresa.id,
+            cliente_id=self.cliente.id,
+            titulo="Proposta aceita vencida",
+            valor=Decimal("1000.00"),
+            valido_ate=timezone.localdate() - timedelta(days=1),
+            criado_por=self.usuario,
+            status=Proposta.Status.ACEITA,
+        )
+
+        total = ServicoProposta.limpar_propostas_expiradas(usuario=self.usuario)
+
+        proposta.refresh_from_db()
+        self.assertEqual(total, 0)
+        self.assertEqual(proposta.status, Proposta.Status.ACEITA)
+
+    def test_management_command_limpa_propostas_expiradas(self):
+        proposta = ServicoProposta.criar_proposta(
+            empresa_id=self.empresa.id,
+            cliente_id=self.cliente.id,
+            titulo="Proposta vencida via comando",
+            valor=Decimal("1000.00"),
+            valido_ate=timezone.localdate() - timedelta(days=1),
+            criado_por=self.usuario,
+            status=Proposta.Status.RASCUNHO,
+        )
+
+        call_command("limpar_propostas_expiradas")
+
+        proposta.refresh_from_db()
+        self.assertEqual(proposta.status, Proposta.Status.EXPIRADA)
 
 
 class ViewsPropostaTestCase(PropostaBaseTestCase):

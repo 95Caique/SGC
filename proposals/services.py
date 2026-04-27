@@ -159,6 +159,35 @@ class ServicoProposta:
         )
         return contrato
 
+    @classmethod
+    @transaction.atomic
+    def limpar_propostas_expiradas(cls, *, usuario=None, hoje=None):
+        hoje = hoje or timezone.localdate()
+        propostas = Proposta.objects.select_for_update().filter(
+            status__in=[Proposta.Status.RASCUNHO, Proposta.Status.ENVIADA],
+            valido_ate__lt=hoje,
+        )
+
+        total = 0
+        for proposta in propostas:
+            status_anterior = proposta.status
+            proposta.status = Proposta.Status.EXPIRADA
+            proposta.save(update_fields=["status", "atualizado_em"])
+            cls._registrar_historico(
+                proposta=proposta,
+                usuario=usuario or proposta.criado_por,
+                acao="expirada",
+                dados={
+                    "status": {
+                        "old": status_anterior,
+                        "new": Proposta.Status.EXPIRADA,
+                    }
+                },
+            )
+            total += 1
+
+        return total
+
     @staticmethod
     def obter_historico_completo(proposta, usuario):
         if not VerificadorPermissoes.usuario_pode_acessar_recurso(usuario, proposta):
