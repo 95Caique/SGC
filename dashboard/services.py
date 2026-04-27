@@ -1,4 +1,4 @@
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from contracts.models import Contrato
@@ -45,8 +45,14 @@ class ServicoPainel:
     def obter_faturamento_por_cliente(empresa):
         return (
             empresa.clientes.annotate(
-                faturamento_mensal=Sum("contratos__valor_mensal"),
-                contratos_ativos=Count("contratos"),
+                faturamento_mensal=Sum(
+                    "contratos__valor_mensal",
+                    filter=Q(contratos__status=Contrato.Status.ATIVO),
+                ),
+                contratos_ativos=Count(
+                    "contratos",
+                    filter=Q(contratos__status=Contrato.Status.ATIVO),
+                ),
             )
             .order_by("-faturamento_mensal", "nome")
             .values("id", "nome", "faturamento_mensal", "contratos_ativos")

@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import UsuarioCustomizado
@@ -91,3 +92,44 @@ class ServicoPainelTestCase(TestCase):
         self.assertEqual(saude["total"], 2)
         self.assertEqual(saude["rascunhos"], 1)
         self.assertEqual(saude["aceitas"], 1)
+
+
+class ViewsPainelTestCase(ServicoPainelTestCase):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.usuario)
+
+    def test_metricas_gerais_via_view(self):
+        resposta = self.client.get(reverse("dashboard:metricas"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.json()["total_contratos_ativos"], 1)
+        self.assertEqual(resposta.json()["faturamento_mensal"], "1200.00")
+
+    def test_contratos_proximos_vencimento_via_view(self):
+        resposta = self.client.get(reverse("dashboard:contratos_vencimento"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(len(resposta.json()["resultados"]), 1)
+        self.assertEqual(resposta.json()["resultados"][0]["titulo"], "Contrato ativo")
+
+    def test_propostas_pendentes_via_view(self):
+        resposta = self.client.get(reverse("dashboard:propostas_pendentes"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(len(resposta.json()["resultados"]), 1)
+        self.assertEqual(resposta.json()["resultados"][0]["status"], Proposta.Status.RASCUNHO)
+
+    def test_faturamento_por_cliente_via_view(self):
+        resposta = self.client.get(reverse("dashboard:faturamento_clientes"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.json()["resultados"][0]["nome"], "Cliente Teste")
+        self.assertEqual(resposta.json()["resultados"][0]["faturamento_mensal"], "1200.00")
+
+    def test_saude_via_view(self):
+        resposta = self.client.get(reverse("dashboard:saude"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.json()["contratos"]["total"], 2)
+        self.assertEqual(resposta.json()["propostas"]["total"], 2)
