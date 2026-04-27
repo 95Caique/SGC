@@ -4,6 +4,7 @@ import shutil
 import tempfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -173,3 +174,66 @@ class ArquivoContratoTestCase(ContratoBaseTestCase):
         self.assertEqual(primeiro.versao, 1)
         self.assertEqual(segundo.versao, 2)
         self.assertIn(f"empresa_{self.empresa.id}/contratos/{contrato.id}/v2.pdf", segundo.arquivo.name)
+
+
+class ViewsContratoTestCase(ContratoBaseTestCase):
+    def test_listar_contratos_filtra_por_empresa_do_usuario(self):
+        self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.get(reverse("contracts:listar"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(len(resposta.json()["resultados"]), 1)
+        self.assertEqual(resposta.json()["resultados"][0]["empresa_id"], self.empresa.id)
+
+    def test_criar_contrato_via_view(self):
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("contracts:criar"),
+            data={
+                "cliente_id": self.cliente.id,
+                "titulo": "Contrato via view",
+                "valor_mensal": "2500.00",
+                "data_inicio": timezone.localdate().isoformat(),
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(resposta.status_code, 201)
+        self.assertEqual(resposta.json()["titulo"], "Contrato via view")
+
+    def test_detalhe_nao_expoe_contrato_de_outra_empresa(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario_outra_empresa)
+
+        resposta = self.client.get(reverse("contracts:detalhe", args=[contrato.id]))
+
+        self.assertEqual(resposta.status_code, 404)
+
+    def test_alterar_status_via_view(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("contracts:alterar_status", args=[contrato.id]),
+            data={"status": Contrato.Status.SUSPENSO},
+            content_type="application/json",
+        )
+
+        contrato.refresh_from_db()
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(contrato.status, Contrato.Status.SUSPENSO)
+
+    def test_upload_arquivo_via_view(self):
+        contrato = self.criar_contrato()
+        self.client.force_login(self.usuario)
+
+        resposta = self.client.post(
+            reverse("contracts:upload_arquivo", args=[contrato.id]),
+            data={"arquivo": SimpleUploadedFile("contrato.pdf", b"arquivo")},
+        )
+
+        self.assertEqual(resposta.status_code, 201)
+        self.assertEqual(resposta.json()["versao"], 1)
