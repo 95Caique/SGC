@@ -308,3 +308,15 @@
   - criacao de contato por formulario.
   - criacao de contato via JSON.
   - bloqueio de contato em cliente de outra empresa.
+
+## Etapa 18 - Relatorios operacionais
+
+- Tela de relatorios deixou de ser apenas resumo agregado.
+- Relatorios passaram a exibir dados operacionais vindos de `ServicoPainel`.
+- Adicionada tabela de faturamento por cliente.
+- Adicionada tabela de contratos proximos do vencimento.
+- Adicionada tabela de propostas pendentes.
+- Relatorios respeitam escopo da empresa para usuarios comuns.
+- Superuser continua visualizando dados globais.
+- Estados vazios foram mantidos nas tabelas.
+- Teste de renderizacao de relatorios passou a validar os blocos operacionais.

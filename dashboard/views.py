@@ -72,12 +72,21 @@ def relatorios(request):
             },
             "saude_contratos": {},
             "saude_propostas": {},
+            "faturamento_clientes": [],
+            "contratos_vencimento": [],
+            "propostas_pendentes": [],
         }
     else:
         contexto = {
             "metricas": _serializar_decimais(ServicoPainel.obter_metricas_gerais(empresa)),
             "saude_contratos": ServicoPainel.obter_saude_contratos(empresa),
             "saude_propostas": ServicoPainel.obter_saude_propostas(empresa),
+            "faturamento_clientes": [
+                _serializar_decimais(item)
+                for item in ServicoPainel.obter_faturamento_por_cliente(empresa)[:10]
+            ],
+            "contratos_vencimento": ServicoPainel.obter_contratos_proximos_vencimento(empresa, dias=60)[:10],
+            "propostas_pendentes": ServicoPainel.obter_propostas_pendentes(empresa)[:10],
         }
     return render(request, "dashboard/relatorios.html", contexto)
 

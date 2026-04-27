@@ -59,4 +59,90 @@
         </table>
     </div>
 </section>
+
+<section class="page-section">
+    <div class="list-meta">Faturamento por cliente</div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Contratos ativos</th>
+                    <th>Faturamento mensal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in faturamento_clientes %}
+                    <tr>
+                        <td><span class="table-link">{{ cliente.nome }}</span></td>
+                        <td>{{ cliente.contratos_ativos }}</td>
+                        <td>R$ {{ cliente.faturamento_mensal|default:"0.00" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3" class="empty-state">Nenhum faturamento encontrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="list-meta">Contratos proximos do vencimento</div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Contrato</th>
+                    <th>Cliente</th>
+                    <th>Fim</th>
+                    <th>Dias</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contrato in contratos_vencimento %}
+                    <tr>
+                        <td><a class="table-link" href="{% url 'contracts:detalhe' contrato.id %}">{{ contrato.titulo }}</a></td>
+                        <td>{{ contrato.cliente.nome }}</td>
+                        <td>{{ contrato.data_fim|date:"d/m/Y" }}</td>
+                        <td>{{ contrato.dias_para_expiracao }}</td>
+                        <td>R$ {{ contrato.valor_mensal }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="empty-state">Nenhum contrato proximo do vencimento.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="list-meta">Propostas pendentes</div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Proposta</th>
+                    <th>Cliente</th>
+                    <th>Status</th>
+                    <th>Valor final</th>
+                    <th>Validade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proposta in propostas_pendentes %}
+                    <tr>
+                        <td><a class="table-link" href="{% url 'proposals:detalhe' proposta.id %}">{{ proposta.titulo }}</a></td>
+                        <td>{{ proposta.cliente.nome }}</td>
+                        <td><span class="badge badge-{{ proposta.status }}">{{ proposta.get_status_display }}</span></td>
+                        <td>R$ {{ proposta.valor_final }}</td>
+                        <td>{% if proposta.valido_ate %}{{ proposta.valido_ate|date:"d/m/Y" }}{% else %}Sem validade{% endif %}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="empty-state">Nenhuma proposta pendente.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endblock %}

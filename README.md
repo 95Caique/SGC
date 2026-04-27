@@ -23,6 +23,7 @@ Backend modular com:
 - Acoes institucionais para alterar status e converter propostas aceitas em contratos.
 - Upload e listagem de arquivos versionados na tela de contrato.
 - Cadastro de contatos na tela de cliente.
+- Relatorios operacionais com faturamento por cliente, vencimentos e propostas pendentes.
 - Filtros funcionais nas listagens institucionais e nos endpoints JSON.
 
 ## Documentacao

@@ -154,6 +154,12 @@ class ViewsPainelTestCase(ServicoPainelTestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "Relatorios")
         self.assertContains(resposta, "data-table")
+        self.assertContains(resposta, "Faturamento por cliente")
+        self.assertContains(resposta, "Contratos proximos do vencimento")
+        self.assertContains(resposta, "Propostas pendentes")
+        self.assertContains(resposta, "Cliente Teste")
+        self.assertContains(resposta, "Contrato ativo")
+        self.assertContains(resposta, "Proposta rascunho")
 
     def test_interface_institucional_renderiza_tabelas(self):
         resposta = self.client.get(reverse("dashboard:interface"))
